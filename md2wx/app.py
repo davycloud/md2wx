@@ -95,6 +95,7 @@ def app(content_path,
         code_style=CODE_STYLE,
         start_server=False,
         server_port=SERVER_PORT,
+        quite=False
         ):
     tmpl = Template(template_path.read_text(encoding='utf-8'))
     tmpl_ts = template_path.stat().st_mtime
@@ -139,7 +140,8 @@ def app(content_path,
 
         if start_server:
             threading.Thread(target=monitor, daemon=True).start()
-            threading.Thread(target=openurl).start()
+            if not quite:
+                threading.Thread(target=openurl).start()
             run_server(directory=str(output_dir), port=server_port)
 
 
@@ -183,7 +185,7 @@ def _main(args):
     app(content_path, template_path,
         output_dir=output_dir, static_path=static_path,
         start_server=start_server, server_port=args.port,
-        code_style=code_stype
+        code_style=code_stype, quite=args.quite
         )
 
 
@@ -195,10 +197,10 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--static', help='静态文件路径')
     group.add_argument('--nostatic', dest='copy_static', action='store_false', help='不需要静态文件')
-    parser.add_argument('--codestyle', default='github-dark', help='代码样式名')
+    parser.add_argument('--codestyle', default=CODE_STYLE, help=f'代码样式名，缺省是 "{CODE_STYLE}"')
     parser.add_argument('--noserver', '--noserve', dest='start_server', action='store_false', help='不启动HTTP服务器')
-    parser.add_argument('--port', type=int, default=SERVER_PORT, help='HTTP服务器端口')
-    parser.add_argument('--openurl', action='store_true', help='打开浏览器并访问HTTP服务器')
+    parser.add_argument('--port', type=int, default=SERVER_PORT, help='HTTP服务器端口，缺省是 ' + str(SERVER_PORT))
+    parser.add_argument('--quite', '-q', action='store_true', help='安静模式，不要打开浏览器')
     parser.add_argument('--debug', action='store_true', help='开启Debug')
 
     global DEBUG
