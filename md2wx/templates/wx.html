@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Md2Wx</title>
-
-    <link href="css/style.css" rel="stylesheet">
     <script src="https://cdn.bootcdn.net/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
-    <link href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.7.0/styles/${code_style}.min.css" rel="stylesheet">
     <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <link href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.7.0/styles/${code_style}.min.css" rel="stylesheet">
+    ${style}
 </head>
 <body>
 <div id="content">
-
 <div id="toolbar" >
   <button class="btn" data-clipboard-action="copy" data-clipboard-target="#container">一键复制</button>
 </div>
@@ -19,7 +17,8 @@
     <div id="container">
     ${content}
     </div>
-    <script src="js/script.js"> </script>
+    <script src="script.js"> </script>
+    ${user_script}
 </div>
 </body>
 </html>

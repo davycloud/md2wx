@@ -5,7 +5,7 @@ import tempfile
 import shutil
 import webbrowser
 import threading
-from typing import Optional
+from typing import Optional, Union
 from contextlib import contextmanager
 from pathlib import Path
 from string import Template
@@ -17,12 +17,21 @@ import frontmatter
 
 from md2wx.styles import code_styles
 
-
 pkg_path = Path(__file__).parent
 
 STATIC_DIR = pkg_path / 'static'
 
+STYLE_DIR = STATIC_DIR / 'css'
+
+BUILTIN_STYLES = {css.stem: css for css in STYLE_DIR.glob('*.css')}
+
+DEFAULT_STYLE_NAME = 'style'
+
+assert DEFAULT_STYLE_NAME in BUILTIN_STYLES
+
 TEMPLATE_PATH = pkg_path / 'templates' / 'wx.html'
+
+MAIN_SCRIPT_FILE = STATIC_DIR / 'js' / 'script.js'
 
 CODE_STYLE = 'github-dark'
 
@@ -32,6 +41,50 @@ DEBUG = False
 
 assert STATIC_DIR.is_dir()
 assert TEMPLATE_PATH.is_file()
+
+
+def validate_static_file(static_file: Optional[Union[str, Path]]):
+    """校验静态文件参数
+
+    允许 3 种情况：
+
+    - None：直接返回，按缺省处理
+    - 路径：必须是已经存在的文件
+    - 字符串：必须是以 http:// 或 https:// 开头的链接形式，否则转为路径处理
+
+    """
+    if static_file is None:
+        return static_file
+    if isinstance(static_file, str):
+        if static_file.startswith('http://') or static_file.startswith('https://'):
+            return static_file
+        static_file = Path(static_file)
+    assert static_file.is_file(), f'指定的静态文件不存在：{static_file}'
+    return static_file
+
+
+def get_style(style_file: Optional[Union[str, Path]], default='') -> str:
+    if style_file is None:
+        return default
+    elif isinstance(style_file, str):
+        return style_file
+    elif isinstance(style_file, Path):
+        name = style_file.name
+        return f'<link href="{name}" rel="stylesheet">'
+    else:
+        raise ValueError(f'样式文件参数不正确：{style_file}')
+
+
+def get_user_script(script_file: Optional[Union[str, Path]], default='') -> str:
+    if script_file is None:
+        return default
+    elif isinstance(script_file, str):
+        return script_file
+    elif isinstance(script_file, Path):
+        name = script_file.name
+        return f'<script src="{name}"> </script>'
+    else:
+        raise ValueError(f'脚本文件参数不正确：{script_file}')
 
 
 def markdown_to_html(markdown_text):
@@ -51,7 +104,7 @@ def render_markdown(markdown_path: Path, template: Template, **kwargs):
 def run_server(directory='.', port=SERVER_PORT):
     from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
-    Handler = partial(SimpleHTTPRequestHandler, directory=directory)
+    Handler = partial(SimpleHTTPRequestHandler, directory=directory)  # noqa
 
     with ThreadingHTTPServer(("", port), Handler) as httpd:
         print("serving at port", port)
@@ -88,11 +141,12 @@ def ctx_output_dir(output_dir: Optional[Path]):
             tmp_dir.cleanup()
 
 
-def app(content_path,
-        template_path,
-        output_dir=None,
-        static_path=None,
-        code_style=CODE_STYLE,
+def app(content_path: Path,
+        template_path: Path,
+        output_dir: Optional[Path] = None,
+        style_path: Optional[Union[str, Path]] = None,
+        user_script_path: Optional[Union[str, Path]] = None,
+        code_style: str = CODE_STYLE,
         start_server=False,
         server_port=SERVER_PORT,
         quite=False
@@ -100,7 +154,20 @@ def app(content_path,
     tmpl = Template(template_path.read_text(encoding='utf-8'))
     tmpl_ts = template_path.stat().st_mtime
 
+    # 虽然命令行输入的参数已经校验过了，这里仍然需要校验以防直接调用出错
+    style_path = validate_static_file(style_path)
+    user_script_path = validate_static_file(user_script_path)
+
     with ctx_output_dir(output_dir) as output_dir:
+        print(f'输出文件路径：{output_dir}')
+
+        for f in (user_script_path, style_path, MAIN_SCRIPT_FILE):
+            if isinstance(f, Path):
+                shutil.copy(f, output_dir)
+
+        default_style = f'<link href="{DEFAULT_STYLE_NAME}.css" rel="stylesheet">'
+        style = get_style(style_path, default=default_style)
+        user_script = get_user_script(user_script_path, default='')
 
         def render():
             nonlocal tmpl, tmpl_ts
@@ -117,7 +184,9 @@ def app(content_path,
                 if not need_all_render and html_file.is_file() \
                         and html_file.stat().st_mtime > md_file.stat().st_mtime:
                     continue
-                html_text = render_markdown(md_file, tmpl, code_style=code_style)
+                html_text = render_markdown(md_file, template=tmpl,
+                                            style=style, user_script=user_script,
+                                            code_style=code_style)
                 html_file.write_text(html_text, encoding='utf-8')
 
         def monitor():
@@ -131,10 +200,6 @@ def app(content_path,
             if content_path.is_file():
                 url += content_path.stem + '.html'
             webbrowser.open(url)
-
-        print(f'输出文件路径：{output_dir}')
-        if static_path:
-            shutil.copytree(static_path, output_dir, dirs_exist_ok=True)
 
         render()
 
@@ -151,17 +216,18 @@ def _main(args):
         raise ValueError(f'Markdown路径不正确，请指定文件夹或文件：{content_path}')
 
     start_server = args.start_server
-    copy_static = args.copy_static
+    # copy_static = args.copy_static
     if args.output:
         output_dir = Path(args.output)
         if output_dir.exists() and not output_dir.is_dir():
             raise ValueError(f'Output已存在且不是一个文件夹：{output_dir}')
     else:
         output_dir = None
-        if not copy_static:
-            print(f'提示：没有指定输出目录并且选择不拷贝静态文件，如果模板需要本地静态文件，页面将无法正常显示。')
+        # if not copy_static:
+        #     print(f'提示：没有指定输出目录并且选择不拷贝静态文件，如果模板需要本地静态文件，页面可能无法正常显示。')
         if not start_server:
-            raise ValueError(f'没有指定输出目录，页面会输出到临时目录，此时如果不启动服务器，命令执行完毕后文件会自动清除而无法查看，所以至少需满足一项。')
+            raise ValueError(
+                f'没有指定输出目录，页面会输出到临时目录，此时如果不启动服务器，命令执行完毕后文件会自动清除而无法查看，所以至少需满足一项。')
 
     if args.template:
         template_path = Path(args.template)
@@ -170,20 +236,28 @@ def _main(args):
 
     assert template_path.is_file(), f'模板文件不正确： {template_path}'
 
-    if not copy_static:
-        static_path = None
-    elif args.static:
-        static_path = Path(args.static)
-        assert static_path.is_dir(), f'静态文件路径不正确: {static_path}'
+    if args.no_style:
+        style_file = None
+    elif args.css:
+        style_file = validate_static_file(args.css)
     else:
-        static_path = STATIC_DIR
+        style_file = BUILTIN_STYLES[args.style]
+
+    if args.no_script:
+        script_file = None
+    elif args.script:
+        script_file = validate_static_file(args.script)
+    else:
+        script_file = MAIN_SCRIPT_FILE
 
     code_stype = args.codestyle
     if code_stype not in code_styles:
         raise ValueError(f'codestyle 不支持，可选择的是：{code_styles}')
 
     app(content_path, template_path,
-        output_dir=output_dir, static_path=static_path,
+        output_dir=output_dir,
+        style_path=style_file,
+        user_script_path=script_file,
         start_server=start_server, server_port=args.port,
         code_style=code_stype, quite=args.quite
         )
@@ -194,9 +268,16 @@ def main():
     parser.add_argument('mdpath', help='.md 文件或者是其所在文件夹路径，缺省是当前路径')
     parser.add_argument('--output', '-o', help='输出文件夹路径，缺省是临时目录')
     parser.add_argument('--template', help='模板文件路径')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--static', help='静态文件路径')
-    group.add_argument('--nostatic', dest='copy_static', action='store_false', help='不需要静态文件')
+
+    script_group = parser.add_mutually_exclusive_group()
+    script_group.add_argument('--script', help='JavaScript 文件路径')
+    script_group.add_argument('--noscript', dest='no_script', action='store_true', help='不需要 JavaScript 文件')
+
+    style_group = parser.add_mutually_exclusive_group()
+    style_group.add_argument('--style', choices=list(BUILTIN_STYLES.keys()), default=DEFAULT_STYLE_NAME, help='内置的样式名')
+    style_group.add_argument('--css', help='自定义样式的CSS文件')
+    style_group.add_argument('--nostyle', dest='no_style', action='store_true', help='不需要样式文件')
+
     parser.add_argument('--codestyle', default=CODE_STYLE, help=f'代码样式名，缺省是 "{CODE_STYLE}"')
     parser.add_argument('--noserver', '--noserve', dest='start_server', action='store_false', help='不启动HTTP服务器')
     parser.add_argument('--port', type=int, default=SERVER_PORT, help='HTTP服务器端口，缺省是 ' + str(SERVER_PORT))
@@ -214,6 +295,8 @@ def main():
         _main(args)
     except Exception as err:
         print(f'Error: {err}')
+        if DEBUG:
+            raise
 
 
 if __name__ == '__main__':
