@@ -10,6 +10,11 @@ license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 
+dependencies = [
+    "Markdown >=3.3.0,<4.0.0",
+    "python-frontmatter",
+]
+
 [project.urls]
 Home = "https://github.com/davycloud/md2wx"
 
