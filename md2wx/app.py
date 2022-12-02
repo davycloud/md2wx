@@ -55,6 +55,7 @@ def run_server(directory='.', port=SERVER_PORT):
 
     with ThreadingHTTPServer(("", port), Handler) as httpd:
         print("serving at port", port)
+        print("按下 Ctrl + c 停止运行")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
@@ -147,15 +148,18 @@ def _main(args):
     if not (content_path.is_dir() or content_path.is_file()):
         raise ValueError(f'Markdown路径不正确，请指定文件夹或文件：{content_path}')
 
-    start_server = args.server
+    start_server = args.start_server
+    copy_static = args.copy_static
     if args.output:
         output_dir = Path(args.output)
         if output_dir.exists() and not output_dir.is_dir():
             raise ValueError(f'Output已存在且不是一个文件夹：{output_dir}')
     else:
         output_dir = None
+        if not copy_static:
+            print(f'提示：没有指定输出目录并且选择不拷贝静态文件，如果模板需要本地静态文件，页面将无法正常显示。')
         if not start_server:
-            raise ValueError(f'不指定输出目录的情况下如果不启动服务器，输出文件会自动清除而无法查看，所以至少需满足一项。')
+            raise ValueError(f'没有指定输出目录，页面会输出到临时目录，此时如果不启动服务器，命令执行完毕后文件会自动清除而无法查看，所以至少需满足一项。')
 
     if args.template:
         template_path = Path(args.template)
@@ -164,8 +168,11 @@ def _main(args):
 
     assert template_path.is_file(), f'模板文件不正确： {template_path}'
 
-    if args.static:
+    if not copy_static:
+        static_path = None
+    elif args.static:
         static_path = Path(args.static)
+        assert static_path.is_dir(), f'静态文件路径不正确: {static_path}'
     else:
         static_path = STATIC_DIR
 
@@ -185,9 +192,11 @@ def main():
     parser.add_argument('mdpath', help='.md 文件或者是其所在文件夹路径，缺省是当前路径')
     parser.add_argument('--output', '-o', help='输出文件夹路径，缺省是临时目录')
     parser.add_argument('--template', help='模板文件路径')
-    parser.add_argument('--static', help='静态文件路径')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--static', help='静态文件路径')
+    group.add_argument('--nostatic', dest='copy_static', action='store_false', help='不需要静态文件')
     parser.add_argument('--codestyle', default='github-dark', help='代码样式名')
-    parser.add_argument('--noserver', '--noserve', dest='server', action='store_false', help='不启动HTTP服务器')
+    parser.add_argument('--noserver', '--noserve', dest='start_server', action='store_false', help='不启动HTTP服务器')
     parser.add_argument('--port', type=int, default=SERVER_PORT, help='HTTP服务器端口')
     parser.add_argument('--openurl', action='store_true', help='打开浏览器并访问HTTP服务器')
     parser.add_argument('--debug', action='store_true', help='开启Debug')
