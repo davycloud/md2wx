@@ -75,7 +75,7 @@ def get_style(style_file: Optional[Union[str, Path]], default='') -> str:
         raise ValueError(f'样式文件参数不正确：{style_file}')
 
 
-def get_user_script(script_file: Optional[Union[str, Path]], default='') -> str:
+def get_custom_script(script_file: Optional[Union[str, Path]], default='') -> str:
     if script_file is None:
         return default
     elif isinstance(script_file, str):
@@ -145,7 +145,7 @@ def app(content_path: Path,
         template_path: Path,
         output_dir: Optional[Path] = None,
         style_path: Optional[Union[str, Path]] = None,
-        user_script_path: Optional[Union[str, Path]] = None,
+        custom_script_path: Optional[Union[str, Path]] = None,
         code_style: str = CODE_STYLE,
         start_server=False,
         server_port=SERVER_PORT,
@@ -156,18 +156,18 @@ def app(content_path: Path,
 
     # 虽然命令行输入的参数已经校验过了，这里仍然需要校验以防直接调用出错
     style_path = validate_static_file(style_path)
-    user_script_path = validate_static_file(user_script_path)
+    custom_script_path = validate_static_file(custom_script_path)
 
     with ctx_output_dir(output_dir) as output_dir:
         print(f'输出文件路径：{output_dir}')
 
-        for f in (user_script_path, style_path, MAIN_SCRIPT_FILE):
+        for f in (custom_script_path, style_path, MAIN_SCRIPT_FILE):
             if isinstance(f, Path):
                 shutil.copy(f, output_dir)
 
         default_style = f'<link href="{DEFAULT_STYLE_NAME}.css" rel="stylesheet">'
         style = get_style(style_path, default=default_style)
-        user_script = get_user_script(user_script_path, default='')
+        custom_script = get_custom_script(custom_script_path, default='')
 
         def render():
             nonlocal tmpl, tmpl_ts
@@ -185,7 +185,7 @@ def app(content_path: Path,
                         and html_file.stat().st_mtime > md_file.stat().st_mtime:
                     continue
                 html_text = render_markdown(md_file, template=tmpl,
-                                            style=style, user_script=user_script,
+                                            style=style, custom_script=custom_script,
                                             code_style=code_style)
                 html_file.write_text(html_text, encoding='utf-8')
 
@@ -257,7 +257,7 @@ def _main(args):
     app(content_path, template_path,
         output_dir=output_dir,
         style_path=style_file,
-        user_script_path=script_file,
+        custom_script_path=script_file,
         start_server=start_server, server_port=args.port,
         code_style=code_stype, quite=args.quite
         )
