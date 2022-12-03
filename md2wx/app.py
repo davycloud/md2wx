@@ -24,8 +24,9 @@ STATIC_DIR = pkg_path / 'static'
 STYLE_DIR = STATIC_DIR / 'css'
 
 BUILTIN_STYLES = {css.stem: css for css in STYLE_DIR.glob('*.css')}
-
-DEFAULT_STYLE_NAME = 'style'
+BUILTIN_STYLES.pop('_basic')
+BASIC_STYLE_FILE = STYLE_DIR / '_basic.css'
+DEFAULT_STYLE_NAME = 'cyan'
 
 assert DEFAULT_STYLE_NAME in BUILTIN_STYLES
 
@@ -89,7 +90,7 @@ def get_custom_script(script_file: Optional[Union[str, Path]], default='') -> st
 
 def markdown_to_html(markdown_text):
     return markdown.markdown(markdown_text,
-                             extensions=['extra'])
+                             extensions=['extra', 'toc', 'nl2br', 'sane_lists'])
 
 
 def render_markdown(markdown_path: Path, template: Template, **kwargs):
@@ -98,6 +99,8 @@ def render_markdown(markdown_path: Path, template: Template, **kwargs):
     metadata = post.metadata
     content = markdown_to_html(post.content)
     kwargs.update(metadata)
+    if DEBUG:
+        print(f'模板参数传入: {kwargs}')
     return template.substitute(content=content, **kwargs)
 
 
@@ -160,19 +163,18 @@ def app(content_path: Path,
 
     with ctx_output_dir(output_dir) as output_dir:
         print(f'输出文件路径：{output_dir}')
-
-        for f in (custom_script_path, style_path, MAIN_SCRIPT_FILE):
-            if isinstance(f, Path):
+        for f in (custom_script_path, style_path, MAIN_SCRIPT_FILE, BASIC_STYLE_FILE):
+            if isinstance(f, Path) and f.parent != output_dir:
                 shutil.copy(f, output_dir)
 
-        default_style = f'<link href="{DEFAULT_STYLE_NAME}.css" rel="stylesheet">'
-        style = get_style(style_path, default=default_style)
+        custom_style = get_style(style_path, default='')
         custom_script = get_custom_script(custom_script_path, default='')
 
-        def render():
+        def render(all_render=False):
             nonlocal tmpl, tmpl_ts
 
-            need_all_render = False
+            need_all_render = all_render
+            # TODO: 不光模板，其它静态文件也要判断是否有更新
             if template_path.stat().st_mtime > tmpl_ts:
                 # reload template
                 need_all_render = True
@@ -185,7 +187,8 @@ def app(content_path: Path,
                         and html_file.stat().st_mtime > md_file.stat().st_mtime:
                     continue
                 html_text = render_markdown(md_file, template=tmpl,
-                                            style=style, custom_script=custom_script,
+                                            custom_style=custom_style,
+                                            custom_script=custom_script,
                                             code_style=code_style)
                 html_file.write_text(html_text, encoding='utf-8')
 
@@ -201,7 +204,7 @@ def app(content_path: Path,
                 url += content_path.stem + '.html'
             webbrowser.open(url)
 
-        render()
+        render(all_render=True)
 
         if start_server:
             threading.Thread(target=monitor, daemon=True).start()
@@ -248,7 +251,8 @@ def _main(args):
     elif args.script:
         script_file = validate_static_file(args.script)
     else:
-        script_file = MAIN_SCRIPT_FILE
+        script_file = None
+        # script_file = MAIN_SCRIPT_FILE
 
     code_stype = args.codestyle
     if code_stype not in code_styles:
