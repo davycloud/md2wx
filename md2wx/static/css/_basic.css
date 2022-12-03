@@ -1,5 +1,5 @@
 /* 全局属性
- * 页边距 
+ * 页边距
  * 全文字体 font-family: ptima-Regular;
  * 英文换行 word-break: break-all;
  */
@@ -7,7 +7,6 @@
   padding: 30px;
   font-family: ptima-RegularOptima-Regular, Optima, PingFangSC-light, PingFangTC-light, 'PingFang SC', Cambria, Cochin, Georgia, serif;
   word-break: break-all;
-  color: #3f3f3f;
   line-height: 1.75;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
@@ -16,45 +15,38 @@
 /* 一级标题 */
 #container h1 {
   font-size: 1.8em;
-  color: #008686;
   margin: 1.2em auto;
   text-align: center;
-  border-bottom: 1px solid #009688;
 }
 
 /* 二级标题 */
 h2 {
   font-size: 1.4em;
-  margin: 2.5em auto 2em;
-  padding: 0 0.2em;
-  background: rgba(0, 152, 116, 0.9);
-  color: #fff;
+  margin: 2em auto;
+  padding-left: 6px;
 }
 
 /* 三级标题 */
 h3 {
   font-weight: bold;
-  font-size: 1.1em;
-  margin: 2em 8px 0.75em 0;
+  font-size: 1.2em;
+  margin: 1.8em auto;
   line-height: 1.2;
   padding-left: 8px;
-  border-left: 3px solid rgba(0, 152, 116, 0.9);
 }
 
 /* 四级标题 */
 #container h4 {
-  margin: 0.6em auto;
+  margin: 0.8em auto;
   font-size: 1.2em;
   padding-left: 10px;
-  border-left: 2px dashed #009688;
 }
-  
+
   /* 五级标题 */
 #container h5 {
   margin: 0.6em auto;
   font-size: 1.1em;
-  padding-left: 10px;
-  border-left: 1px dashed #009688;
+  padding-left: 12px;
 }
 
 /* 段落 */
@@ -67,17 +59,14 @@ h3 {
 /* 引用 */
 blockquote {
   font-style: normal;
-  border-left: 3px solid #177cb0;
   padding: .5em;
   border-radius: 4px;
-  color: #FEEEED;
   background: rgba(27,31,35,.05);
   margin: 1em 5px
 }
 
 blockquote p {
   letter-spacing: 0.1em;
-  color: rgb(80, 80, 80);
   font-size: 1em;
   display: block;
 }
@@ -85,16 +74,18 @@ blockquote p {
 
 /* 图片 */
 img {
-  border-radius: 4px;
-  display: block;
-  margin: 0.1em auto 0.5em;
   width: 100% !important;
+  border-radius: 6px;
+  display: block;
+  margin: 20px auto;
+  object-fit: contain;
+  box-shadow:2px 4px 7px #999;
 }
 
 /* 无序列表 */
 ul {
-  margin-left: 1em;
-  padding-left: 1em;
+    margin-left: 1em;
+    padding-left: 1em;
 }
 
 /* 有序列表 */
@@ -104,55 +95,45 @@ ol {
 }
 
 li {
-  text-indent: .4em;
+  padding-left: 4px;
 }
 
 /* 加粗 */
 strong {
-  color: #009688;
   font-weight: bold;
 }
 
 /* 链接 */
 a {
-  color: #576b95;
+  color: #444851;
 }
 
 /* 代码高亮 */
 #container pre code {
-  display: block;
   overflow-x: auto;
   overflow: auto !important;
   overflow-wrap: normal !important;
   padding: 16px;
-  /* background: #23241f; */
-  border-radius: 5px;
+  border-radius: 6px;
+  box-shadow:2px 4px 7px #999;
   margin: 1em 0px;
-  /* word-wrap: normal !important; */
   word-break: normal !important;
-  /* -webkit-nbsp-mode: pre; */
   display: -webkit-box !important;
 }
 
 
-#container pre.nohighlight > code {
-    background: #efefef;
-}
-
-/* pre {
-  white-space: pre;
-} */
-
 code {
   font-size: 13px;
   font-family: 'Consolas', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
-  white-space: pre !important;
 }
 
 /* 行内代码 */
 #container p code, #container li code {
-  color: #009688;
+  font-size: 14px;
+  background: #f8f5f3;
+  color: #343b4b;
 }
+
 
 /* 表格 */
 table {
