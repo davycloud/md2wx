@@ -159,6 +159,7 @@ def app(content_path: Path,
         style_path: Optional[Union[str, Path]] = None,
         custom_script_path: Optional[Union[str, Path]] = None,
         code_style: str = CODE_STYLE,
+        copy_basic_static=True,
         start_server=False,
         server_port=SERVER_PORT,
         quite=False
@@ -169,11 +170,15 @@ def app(content_path: Path,
     # 虽然命令行输入的参数已经校验过了，这里仍然需要校验以防直接调用出错
     style_path = validate_static_file(style_path)
     custom_script_path = validate_static_file(custom_script_path)
+    to_copy = [f for f in (custom_script_path, style_path) if isinstance(f, Path)]
+    if copy_basic_static:
+        to_copy.append(MAIN_SCRIPT_FILE)
+        to_copy.append(BASIC_STYLE_FILE)
 
     with ctx_output_dir(output_dir) as output_dir:
         print(f'输出文件路径：{output_dir}')
-        for f in (custom_script_path, style_path, MAIN_SCRIPT_FILE, BASIC_STYLE_FILE):
-            if isinstance(f, Path) and f.parent != output_dir:
+        for f in to_copy:
+            if f.parent != output_dir:
                 shutil.copy(f, output_dir)
 
         custom_style = get_style(style_path, default='')
@@ -228,15 +233,12 @@ def _main(args):
         raise ValueError(f'Markdown路径不正确，请指定文件夹或文件：{content_path}')
 
     start_server = args.start_server
-    # copy_static = args.copy_static
     if args.output:
         output_dir = Path(args.output)
         if output_dir.exists() and not output_dir.is_dir():
             raise ValueError(f'Output已存在且不是一个文件夹：{output_dir}')
     else:
         output_dir = None
-        # if not copy_static:
-        #     print(f'提示：没有指定输出目录并且选择不拷贝静态文件，如果模板需要本地静态文件，页面可能无法正常显示。')
         if not start_server:
             raise ValueError(
                 f'没有指定输出目录，页面会输出到临时目录，此时如果不启动服务器，命令执行完毕后文件会自动清除而无法查看，所以至少需满足一项。')
@@ -245,19 +247,18 @@ def _main(args):
         template_path = Path(args.template)
     else:
         template_path = TEMPLATE_PATH
+        if not args.copy_basic_static:
+            raise ValueError(
+                f'默认的模板需要JS才能正常运行，该选项只在指定了自定义模板的情况下才能使用。')
 
     assert template_path.is_file(), f'模板文件不正确： {template_path}'
 
-    if args.no_style:
-        style_file = None
-    elif args.css:
+    if args.css:
         style_file = validate_static_file(args.css)
     else:
-        style_file = BUILTIN_STYLES[args.style]
+        style_file = BUILTIN_STYLES.get(args.style, None)
 
-    if args.no_script:
-        script_file = None
-    elif args.script:
+    if args.script:
         script_file = validate_static_file(args.script)
     else:
         script_file = None
@@ -273,6 +274,7 @@ def _main(args):
         output_dir=output_dir,
         style_path=style_file,
         custom_script_path=script_file,
+        copy_basic_static=args.copy_basic_static,
         start_server=start_server, server_port=args.port,
         code_style=code_stype, quite=args.quite
         )
@@ -284,21 +286,22 @@ def main():
     parser.add_argument('--output', '-o', help='输出文件夹路径，缺省是临时目录')
     parser.add_argument('--template', help='模板文件路径')
 
-    script_group = parser.add_mutually_exclusive_group()
-    script_group.add_argument('--script', help='JavaScript 文件路径')
-    script_group.add_argument('--noscript', dest='no_script', action='store_true', help='不需要 JavaScript 文件')
+    parser.add_argument('--script', help='JavaScript 文件路径')
 
     style_group = parser.add_mutually_exclusive_group()
-    style_group.add_argument('--style', choices=list(BUILTIN_STYLES.keys()), default=DEFAULT_STYLE_NAME, help='内置的样式名')
+    style_group.add_argument('--style', choices=list(BUILTIN_STYLES.keys()), default=DEFAULT_STYLE_NAME,
+                             help='内置的样式名')
     style_group.add_argument('--css', help='自定义样式的CSS文件')
-    style_group.add_argument('--nostyle', dest='no_style', action='store_true', help='不需要样式文件')
-
     parser.add_argument('--codestyle', default=CODE_STYLE, help=f'代码样式名，缺省是 "{CODE_STYLE}"')
-    parser.add_argument('--noserver', '--noserve', dest='start_server', action='store_false', help='不启动HTTP服务器')
+    parser.add_argument('--no-basic-static', dest='copy_basic_static', action='store_false',
+                        help='不要复制基础静态文件(_basic.css 和 script.js)，当自定义模板不需要这些文件时使用该选项')
+    parser.add_argument('--noserver', '--noserve', dest='start_server', action='store_false',
+                        help='不启动HTTP服务器(只有在使用 --output 指定了输出目录时才能用)')
     parser.add_argument('--port', type=int, default=SERVER_PORT, help='HTTP服务器端口，缺省是 ' + str(SERVER_PORT))
     parser.add_argument('--quite', '-q', action='store_true', help='安静模式，不要打开浏览器')
     parser.add_argument('--debug', action='store_true', help='开启Debug')
-    parser.add_argument('--dryrun', action='store_true', help='不实际运行，解析参数后立即退出，配合 --debug 查看参数解析结果')
+    parser.add_argument('--dryrun', action='store_true',
+                        help='不实际运行，解析参数后立即退出，配合 --debug 查看参数解析结果')
 
     global DEBUG
     args_ns = argparse.Namespace()
