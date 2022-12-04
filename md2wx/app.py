@@ -1,6 +1,12 @@
 """将 Markdown 转换为可以一键发布的 HTML
 """
+
+import os
+import io
+import sys
+import shlex
 import time
+import argparse
 import tempfile
 import shutil
 import webbrowser
@@ -42,6 +48,9 @@ DEBUG = False
 
 assert STATIC_DIR.is_dir()
 assert TEMPLATE_PATH.is_file()
+
+# 环境变量传参
+EV_ARGS = 'MD2WX_ARGS'
 
 
 def validate_static_file(static_file: Optional[Union[str, Path]]):
@@ -252,11 +261,13 @@ def _main(args):
         script_file = validate_static_file(args.script)
     else:
         script_file = None
-        # script_file = MAIN_SCRIPT_FILE
 
     code_stype = args.codestyle
     if code_stype not in code_styles:
         raise ValueError(f'codestyle 不支持，可选择的是：{code_styles}')
+
+    if args.dryrun:
+        exit(0)
 
     app(content_path, template_path,
         output_dir=output_dir,
@@ -287,14 +298,28 @@ def main():
     parser.add_argument('--port', type=int, default=SERVER_PORT, help='HTTP服务器端口，缺省是 ' + str(SERVER_PORT))
     parser.add_argument('--quite', '-q', action='store_true', help='安静模式，不要打开浏览器')
     parser.add_argument('--debug', action='store_true', help='开启Debug')
+    parser.add_argument('--dryrun', action='store_true', help='不实际运行，解析参数后立即退出，配合 --debug 查看参数解析结果')
 
     global DEBUG
+    args_ns = argparse.Namespace()
+    if EV_ARGS in os.environ:
+        env_args = shlex.split(os.environ.get(EV_ARGS))
+        _sys_stderr = sys.stderr
+        try:
+            sys.stderr = io.StringIO()
+            parser.parse_known_args(env_args, args_ns)
+        except SystemExit:
+            pass
+        finally:
+            sys.stderr = _sys_stderr
 
-    args = parser.parse_args()
+    args = parser.parse_args(namespace=args_ns)
+    assert args is args_ns
+
     DEBUG = args.debug
     if DEBUG:
-        print(parser.format_help())
         print(args)
+
     try:
         _main(args)
     except Exception as err:
