@@ -1,0 +1,52 @@
+
+/* 二级标题 */
+h2 {
+    background: rgba(220, 20, 67, 0.716);
+    color: #fff;
+}
+
+/* 三级标题 */
+h3 {
+    border-left: 5px solid rgba(220, 20, 67, 0.716);
+    color: #de2c52;
+  }
+
+/* 链接 */
+a {
+    color: #de2c52;
+}
+
+/* 行内代码 */
+#container p code, #container li code {
+  color: #de2c52;
+}
+
+
+/* 加粗 */
+strong {
+  color: #de2c52;
+  font-weight: bold;
+}
+
+/* 引用 */
+blockquote {
+  border-left: 4px solid #de2c52;
+  border-radius: 4px;
+  background: #fff5f5;
+}
+
+/* 图片 */
+
+/* 表头 */
+thead {
+    background: rgba(215, 65, 65, 0.09);
+    font-weight: bold;
+}
+
+/* 分隔线 */
+hr {
+  height: 1px;
+  padding: 0;
+  border: none;
+  border-top: 1.5px solid #de2c52;
+}

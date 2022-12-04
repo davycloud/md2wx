@@ -1,0 +1,133 @@
+/* 全局属性 */
+#container {
+  padding: 30px;
+}
+
+/* 一级标题 */
+#container h1 {
+  font-size: 1.8em;
+  color: #008686;
+  margin: 1.2em auto;
+  text-align: center;
+  border-bottom: 1px solid #009688;
+}
+
+/* 二级标题 */
+h2 {
+  background: rgba(0, 152, 116, 0.9);
+  color: #fff;
+}
+
+/* 三级标题 */
+h3 {
+  border-left: 3px solid rgba(0, 152, 116, 0.9);
+}
+
+/* 四级标题 */
+#container h4 {
+  border-left: 2px dashed #009688;
+}
+  
+  /* 五级标题 */
+#container h5 {
+  border-left: 1px dashed #009688;
+}
+
+/* 段落 */
+#container p {
+  text-align: justify;
+  letter-spacing: .75px;
+  margin: 1.5em 8px;
+}
+
+/* 引用 */
+blockquote {
+  border-left: 4px solid #009688;
+  border-radius: 4px;
+}
+
+blockquote p {
+  letter-spacing: 0.1em;
+  color: rgb(80, 80, 80);
+  font-size: 1em;
+  display: block;
+}
+
+
+/* 图片 */
+img {
+  border-radius: 4px;
+  display: block;
+  margin: 0.1em auto 0.5em;
+  width: 100% !important;
+}
+
+/* 无序列表 */
+ul {
+  margin-left: 1em;
+  padding-left: 1em;
+}
+
+/* 有序列表 */
+ol {
+  margin-left: 1em;
+  padding-left: 1em;
+}
+
+/* 加粗 */
+strong {
+  color: #009688;
+}
+
+/* 链接 */
+a {
+  color: #576b95;
+}
+
+/* 代码高亮 */
+#container pre code {
+  overflow-x: auto;
+  overflow: auto !important;
+  overflow-wrap: normal !important;
+  padding: 16px;
+  border-radius: 5px;
+  margin: 1em 0px;
+  word-break: normal !important;
+  display: -webkit-box !important;
+}
+
+code {
+  font-size: 13px;
+  font-family: 'Consolas', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
+  white-space: pre !important;
+}
+
+/* 行内代码 */
+#container p code, #container li code {
+  color: #009688;
+}
+
+/* 表格 */
+table {
+  border-collapse: collapse;
+  text-align: center;
+  margin: 8px 0;
+  width: 100%!important;
+}
+
+thead {
+  background: rgba(0, 88, 99, 0.09);
+  font-weight: bold;
+}
+
+td {
+  border: 1px solid #dfdfdf;
+  padding: 0.25em 0.5em;
+}
+
+hr {
+  height: 1px;
+  padding: 0;
+  border: none;
+  border-top: 1px solid #009688;
+}
