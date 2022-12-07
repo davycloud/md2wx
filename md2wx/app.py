@@ -216,7 +216,8 @@ def app(content_path: Path,
             url = f'http://localhost:{server_port}/'
             if content_path.is_file():
                 url += content_path.stem + '.html'
-            webbrowser.open(url)
+            if server_started_ok:
+                webbrowser.open(url)
 
         render(all_render=True)
 
@@ -224,7 +225,14 @@ def app(content_path: Path,
             threading.Thread(target=monitor, daemon=True).start()
             if not quite:
                 threading.Thread(target=openurl).start()
-            run_server(directory=str(output_dir), port=server_port)
+            try:
+                server_started_ok = True
+                run_server(directory=str(output_dir), port=server_port)
+            except OSError:
+                print(f'启动 HTTP Server 失败，使用 --port 换其它端口试试。')
+                server_started_ok = False
+                raise
+
 
 
 def _main(args):
